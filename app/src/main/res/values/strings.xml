@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">ImageClassify</string>
+    <string name="llmselection">SelectTFLite</string>
+    <string-array name="spinner_items">
+        <item>EfficentNet</item>
+        <item>MobileNet</item>
+        <item>Resnet 18</item>
+    </string-array>
+
+</resources>
