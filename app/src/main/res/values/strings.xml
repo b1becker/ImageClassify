@@ -4,7 +4,8 @@
     <string-array name="spinner_items">
         <item>EfficentNet</item>
         <item>MobileNet</item>
-        <item>Resnet 18</item>
+        <item>Resnet 50</item>
+        <item>EfficentNet (quantized)</item>
     </string-array>
 
 </resources>

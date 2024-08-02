@@ -24,8 +24,11 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import com.example.imageclassify.ml.AutoModel2;
+import com.example.imageclassify.ml.Effnet730Metadata;
+import com.example.imageclassify.ml.MobilenetV1075160Quantized;
 import com.example.imageclassify.ml.ModelFlowers;
-import com.example.imageclassify.ml.Resnet18;
+import com.example.imageclassify.ml.Resnet0802Metadata;
+
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.common.ops.NormalizeOp;
 import org.tensorflow.lite.support.image.ImageProcessor;
@@ -42,9 +45,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-
-
-
 
     Button selectBtn, predictBtn, captureBtn;
     TextView result, time_el;
@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Check if the Spinner's selected item is "Resnet18"
                 String selectedItem = spinner.getSelectedItem().toString();
-                if (selectedItem.equals("Resnet 18")) {
+                if (selectedItem.equals("Resnet 50")) {
                     // Set the TextView to "Resnet"
                     result.setText("Resnet");
                     resnetClassify(labels);
@@ -97,6 +97,9 @@ public class MainActivity extends AppCompatActivity {
                 } else if (selectedItem.equals("EfficentNet")) {
                     result.setText("effnet");
                     effnetClassify();
+                } else if (selectedItem.equals("EfficentNet (quantized)")) {
+                    result.setText("effnet quantized");
+                    effnetQuantizedClassify();
                 } else {
                     // Show a toast message indicating the incorrect selection
                     Toast.makeText(MainActivity.this, "Please select 'Resnet18' from the spinner", Toast.LENGTH_SHORT).show();
@@ -113,9 +116,6 @@ public class MainActivity extends AppCompatActivity {
 
 
         getPermission();
-
-
-
 
         selectBtn = findViewById(R.id.selectBtn);
 
@@ -200,29 +200,30 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    void mobileNetClassify(){
+    void effnetQuantizedClassify(){
         result = findViewById(R.id.result);
         time_el = findViewById(R.id.time_elapsed);
         TimeTracker t = new TimeTracker();
+
         predictBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
                 try {
 
-                    ModelFlowers model = ModelFlowers.newInstance(MainActivity.this);
+                    AutoModel2 model = AutoModel2.newInstance(MainActivity.this);
 
                     // Creates inputs for reference.
-                    long startTime = System.nanoTime();
                     TensorImage image = TensorImage.fromBitmap(bitmap);
 
-                    // Runs model inference and gets result. We are going to apply this to resnet tmrw
-                    ModelFlowers.Outputs outputs = model.process(image);
+                    long startTime = System.nanoTime();
+
+                    // Runs model inference and gets result.
+                    AutoModel2.Outputs outputs = model.process(image);
                     List<Category> probability = outputs.getProbabilityAsCategoryList();
+
                     long endTime = System.nanoTime();
 
                     t.setTimeElapsed(startTime, endTime);
-
 
                     // Find the category with the highest probability
                     Category bestCategory = null;
@@ -244,8 +245,54 @@ public class MainActivity extends AppCompatActivity {
                     model.close();
                 } catch (IOException e) {
                     // TODO Handle the exception
-                    e.printStackTrace();
-                    result.setText("Error: " + e.getMessage());
+                }
+
+            }
+        });
+    }
+
+    void mobileNetClassify(){
+        result = findViewById(R.id.result);
+        time_el = findViewById(R.id.time_elapsed);
+        TimeTracker t = new TimeTracker();
+        predictBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                try {
+                    ModelFlowers model = ModelFlowers.newInstance(MainActivity.this);
+
+                    // Creates inputs for reference.
+                    long startTime = System.nanoTime();
+                    TensorImage image = TensorImage.fromBitmap(bitmap);
+
+                    // Runs model inference and gets result. We are going to apply this to resnet tmrw
+                    ModelFlowers.Outputs outputs = model.process(image);
+                    List<Category> probability = outputs.getProbabilityAsCategoryList();
+                    long endTime = System.nanoTime();
+
+                    t.setTimeElapsed(startTime, endTime);
+
+                    // Find the category with the highest probability
+                    Category bestCategory = null;
+                    for (Category category : probability) {
+                        if (bestCategory == null || category.getScore() > bestCategory.getScore()) {
+                            bestCategory = category;
+                        }
+                    }
+
+                    // Display the result using result.setText()
+                    if (bestCategory != null) {
+                        result.setText(String.format("%s: %.2f%%", bestCategory.getLabel(), bestCategory.getScore() * 100));
+                    } else {
+                        result.setText("No categories found");
+                    }
+                    time_el.setText(t.getTimeElapsed()+" miliseconds");
+
+                    // Releases model resources if no longer used.
+                    model.close();
+                } catch (IOException e) {
+                    // TODO Handle the exception
                 }
 
             }
@@ -266,47 +313,39 @@ public class MainActivity extends AppCompatActivity {
                 // Load the image from assets
 
                 try {
-                    Resnet18 model = Resnet18.newInstance(MainActivity.this);
+                    Resnet0802Metadata model = Resnet0802Metadata.newInstance(MainActivity.this);
 
-                    // Create and resize the bitmap to match the model's input dimensions
+                    // Creates inputs for reference.
                     long startTime = System.nanoTime();
-                    bitmap = Bitmap.createScaledBitmap(bitmap, 32, 32, true);
+                    TensorImage image = TensorImage.fromBitmap(bitmap);
 
-                    // Creates TensorBuffer input
-                    TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 32, 32, 3}, DataType.FLOAT32);
+                    // Runs model inference and gets result.
+                    Resnet0802Metadata.Outputs outputs = model.process(image);
+                    List<Category> probability = outputs.getProbabilityAsCategoryList();
 
-                    // Convert the bitmap to TensorImage and then to ByteBuffer
-                    TensorImage tensorImage = new TensorImage(DataType.FLOAT32);
-                    tensorImage.load(bitmap);
-
-                    // Ensure that the buffer size matches the expected input tensor size
-                    if (tensorImage.getBuffer().capacity() != inputFeature0.getBuffer().capacity()) {
-                        throw new IllegalArgumentException("Buffer size mismatch.");
+                    long endTime = System.nanoTime();
+                    t.setTimeElapsed(startTime,endTime);
+                    // Find the category with the highest probability
+                    Category bestCategory = null;
+                    for (Category category : probability) {
+                        if (bestCategory == null || category.getScore() > bestCategory.getScore()) {
+                            bestCategory = category;
+                        }
                     }
 
-                    // Load the ByteBuffer into the TensorBuffer
-                    inputFeature0.loadBuffer(tensorImage.getBuffer());
-                    long endTime = System.nanoTime();
 
-                    t.setTimeElapsed(startTime, endTime);
-                    time_el.setText(t.getTimeElapsed()+" miliseconds");
+                    // Display the result using result.setText()
+                    if (bestCategory != null) {
+                        result.setText(String.format("%s: %.2f%%", bestCategory.getLabel(), bestCategory.getScore()));
+                    } else {
+                        result.setText("No categories found");
+                    }
+                    time_el.setText(t.getTimeElapsed()+" milliseconds");
 
-
-                    // Runs model inference and gets result
-                    Resnet18.Outputs outputs = model.process(inputFeature0);
-                    TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-                    result.setText(outputFeature0.getFloatArray() + "");
-
-                    // Releases model resources if no longer used
+                    // Releases model resources if no longer used.
                     model.close();
-                }
-
-                catch (IOException e) {
-                    Log.e(TAG, "Error loading model", e);
-                    result.setText("Error loading model: " + e.getMessage());
-                } catch (Exception e) {
-                    Log.e(TAG, "Error during model inference", e);
-                    result.setText("Error during model inference: " + e.getMessage());
+                } catch (IOException e) {
+                    // TODO Handle the exception
                 }
 
             }
@@ -347,8 +386,6 @@ public class MainActivity extends AppCompatActivity {
 
                     t.setTimeElapsed(startTime, endTime);
 
-
-
                     // Find the category with the highest probability
                     Category maxCategory = null;
                     for (Category category : probability) {
@@ -366,7 +403,6 @@ public class MainActivity extends AppCompatActivity {
 
                     time_el.setText("Time Elapsed: "+ t.getTimeElapsed() +" miliseconds");
 
-
                     // Releases model resources if no longer used.
                     model.close();
                 } catch (IOException e) {
@@ -380,6 +416,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
     private int getMaxIndex(float[] array) {
         int maxIndex = -1;
         float maxValue = Float.NEGATIVE_INFINITY;
@@ -391,40 +428,8 @@ public class MainActivity extends AppCompatActivity {
         }
         return maxIndex;
     }
-    // Helper method to convert output array to a list of categories
-    private List<Category> convertToCategoryList(float[] outputArray) {
-        List<Category> categoryList = new ArrayList<>();
-        for (int i = 0; i < outputArray.length; i++) {
-            categoryList.add(new Category("Label_" + i, outputArray[i]));
-        }
-        return categoryList;
-    }
-    public static ByteBuffer preprocessimage(Bitmap bitmap, int modelInputWidth, int modelInputHeight){
-        // Convert the Bitmap to TensorImage
-        TensorImage tensorImage = new TensorImage(DataType.FLOAT32);
-        tensorImage.load(bitmap);
 
-        // Resize the image to the input size required by the model
-        ResizeOp resizeOp = new ResizeOp(modelInputHeight, modelInputWidth, ResizeOp.ResizeMethod.BILINEAR);
-        tensorImage = resizeOp.apply(tensorImage);
 
-        // Normalize the image (if needed by your model)
-        // This step is model specific; some models require normalization to [-1, 1] or [0, 1]
-        // Assuming normalization to [0, 1] for this example
-        float[] imageData = tensorImage.getTensorBuffer().getFloatArray();
-        for (int i = 0; i < imageData.length; i++) {
-            imageData[i] = imageData[i] / 255.0f;
-        }
-
-        // Create a ByteBuffer to hold the normalized data
-        ByteBuffer inputBuffer = ByteBuffer.allocateDirect(4 * modelInputWidth * modelInputHeight * 3);
-        inputBuffer.rewind();
-        for (float value : imageData) {
-            inputBuffer.putFloat(value);
-        }
-
-        return inputBuffer;
-    }
 
 }
 
