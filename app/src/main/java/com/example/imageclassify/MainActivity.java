@@ -1,7 +1,4 @@
 package com.example.imageclassify;
-
-import static android.content.ContentValues.TAG;
-
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -10,7 +7,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -24,24 +20,16 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import com.example.imageclassify.ml.AutoModel2;
-import com.example.imageclassify.ml.Effnet730Metadata;
-import com.example.imageclassify.ml.MobilenetV1075160Quantized;
 import com.example.imageclassify.ml.ModelFlowers;
 import com.example.imageclassify.ml.Resnet0802Metadata;
-
-import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.common.ops.NormalizeOp;
 import org.tensorflow.lite.support.image.ImageProcessor;
 import org.tensorflow.lite.support.image.TensorImage;
 import org.tensorflow.lite.support.image.ops.ResizeOp;
 import org.tensorflow.lite.support.label.Category;
-import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -352,17 +340,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
-    public ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap) {
-        int bytes = bitmap.getByteCount();
-        ByteBuffer buffer = ByteBuffer.allocateDirect(bytes);
-        buffer.order(ByteOrder.nativeOrder());
-        bitmap.copyPixelsToBuffer(buffer);
-        buffer.rewind();
-        return buffer;
-    }
-
-
-
 
     void effnetClassify() {
         result = findViewById(R.id.result);
@@ -415,18 +392,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-    }
-
-    private int getMaxIndex(float[] array) {
-        int maxIndex = -1;
-        float maxValue = Float.NEGATIVE_INFINITY;
-        for (int i = 0; i < array.length; i++) {
-            if (array[i] > maxValue) {
-                maxValue = array[i];
-                maxIndex = i;
-            }
-        }
-        return maxIndex;
     }
 
 
